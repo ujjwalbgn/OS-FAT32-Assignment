@@ -201,7 +201,7 @@ int cd(char *directoryName)
   return 0;
 }
 
-int staFile(char *fileName)
+int statFile(char *fileName)
 {
   int i;
   int found = 0;
