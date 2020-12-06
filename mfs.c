@@ -221,7 +221,7 @@ int staFile(char *fileName)
   return 0;
 }
 
-int getFike(char *orginalFilename, char *newFileName)
+int getFile(char *orginalFilename, char *newFileName)
 {
   FILE *ofp;
 
