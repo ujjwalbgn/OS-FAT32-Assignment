@@ -43,12 +43,12 @@
 struct __attribute__ (  (__packed__)  ) DirectoryEntry
 {
   char DIR_NAME[11];
-  uint8_t DIR_Attr;
-  uint8_t unsued1[8];
-  uint16_t DIR_FirstClusterHigh;
-  uint8_t unsued2[8];
-  uint16_t DIR_FirstClusterLow;
-  uint32_t DIR_FileSize;
+  u_int8_t DIR_Attr;
+  u_int8_t unsued1[8];
+  u_int16_t DIR_FirstClusterHigh;
+  u_int8_t unsued2[8];
+  u_int16_t DIR_FirstClusterLow;
+  u_int32_t DIR_FileSize;
 };
 
 
@@ -63,14 +63,14 @@ int32_t BPB_FATz32;
 FILE *fp;
 int file_open =0;
 
-int32_t LABoOffset( int32_t sector)
+int32_t LBAToOffset( int32_t sector)
 {
   return( (sector - 2) * BPB_BytsPerSec) + (BPB_NumFATs * BPB_FATz32  * BPB_BytsPerSec) + (BPB_RsvdSecCnt * BPB_BytsPerSec) ;
 }
 
 int16_t NextLB (int32_t sector)
 {
-  uint32_t FATAddress = (BPB_BytsPerSec * BPB_RsvdSecCnt) + (sector * 4);
+  u_int32_t FATAddress = (BPB_BytsPerSec * BPB_RsvdSecCnt) + (sector * 4);
   int16_t val;
   fseek(fp, FATAddress, SEEK_SET);
   fread(&val,2,1,fp);
@@ -114,7 +114,7 @@ int compare (char * userString, char * directoryString)
     strncpy ((char *)(expanded_name+8),token,strlen(token));
   }
 
-  expanded_name[11] = '/0';
+  expanded_name[11] = '\0';
 
   int i;
   for ( i =0; i < 11; i++)
@@ -140,6 +140,143 @@ int compare (char * userString, char * directoryString)
 
 #define MAX_COMMAND_SIZE 255    // The maximum command-line size
 
+int bpb()
+{
+  printf("BPB_BytsPerSec: %d 0x%x\n", BPB_BytsPerSec,  BPB_BytsPerSec );
+  printf("BPB_SecPerClus: %d 0x%x\n", BPB_SecPerClus,  BPB_SecPerClus );
+  printf("BPB_RsvdSecCnt: %d 0x%x\n", BPB_RsvdSecCnt,  BPB_RsvdSecCnt );
+  printf("BPB_NumFATs: %d 0x%x\n", BPB_NumFATs,  BPB_NumFATs );
+  printf("BPB_FATz32: %d 0x%x\n", BPB_FATz32,  BPB_FATz32 );
+
+  return 0;
+}
+
+int ls()
+{
+  int i;
+  for (i =0; i < NUM_ENTRIES; i++)
+  {
+
+    char filename[12];
+    strncpy(filename, dir[i].DIR_NAME,11);
+    filename[11] = '\0';
+
+    if(( dir[i].DIR_Attr == ATTR_READ_ONLY || dir[i].DIR_Attr == ATTR_DIRECTORY 
+      || dir[i].DIR_Attr == ATTR_ARCHIVE ) && filename[0] != 0xffffffe5)
+      {
+        printf("%s\n", filename);
+      }
+  }
+  return 0;
+}
+
+int cd (char * directoryName)
+{
+  int i;
+  int found = 0;
+  for( i =0; i< NUM_ENTRIES; i++)
+  {
+    if( compare (directoryName, dir[i].DIR_NAME))
+    {
+      int cluster = dir[i].DIR_FirstClusterLow;
+
+      if( cluster == 0)
+      {
+        cluster = 2;
+      }
+
+      int offset = LBAToOffset(cluster);
+      fseek(fp,offset, SEEK_SET);
+
+      fread(dir,sizeof(struct DirectoryEntry), NUM_ENTRIES, fp);
+
+      found = 1;
+      break;
+    }
+  }
+  if( !found)
+  {
+    printf("Error: Direcrory not found\n");
+    return -1;
+  }
+
+  return 0;
+}
+
+int staFile( char * fileName)
+{
+  int i;
+  int found = 0;
+  for (i -0; i < NUM_ENTRIES; i++)
+  {
+    if( compare(fileName, dir[i].DIR_NAME))
+    {
+      printf("%s Attr: %d Size: %d Custer: %d\n", fileName,dir[i].DIR_Attr,dir[i].DIR_FileSize, dir[i].DIR_FirstClusterLow);
+      found = 1;
+    }
+  }
+  if(!found)
+  {
+    printf("Error: File Not Found\n");
+  }
+
+  return 0;
+}
+
+int getFike (char * orginalFilename, char * newFileName)
+{
+  FILE * ofp;
+
+  if( newFileName == NULL)
+  {
+    ofp = fopen(newFileName, "w");
+    if(ofp == NULL)
+    {
+      printf("Uable to open file: %s\n", orginalFilename);
+      perror("Error: "); //*******
+    }
+  }
+  else
+  {
+    ofp = fopen( newFileName, "w");
+    if(ofp == NULL)
+    {
+      printf("Uable to open file: %s\n", newFileName);
+      perror("Error: "); //*******
+    }
+  }
+  
+  int i;
+  int found = 0;
+
+  //
+  //
+  //
+
+  for (i =0; i < NUM_ENTRIES; i++)
+  {
+    if (compare(orginalFilename, dir[i].DIR_NAME))
+    {
+      int cluster = dir[i].DIR_FirstClusterLow;
+      
+      found =1;
+
+      int bytesRemainingToRead = dir[i].DIR_FileSize;
+      int offset = 0;
+      unsigned char buffer[512];
+    }
+    
+    //
+    //
+    while (bytesRemainingToRead >= BPB_BytsPerSec)
+    {
+      offset = LBAToOffset(cluster);
+      fseek (fp, offset, SEEK_SET);
+      fread( buffer,1 )
+    }
+    
+  }
+}
 
 int main()
 {
