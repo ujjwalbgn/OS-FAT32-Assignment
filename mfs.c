@@ -135,7 +135,7 @@ int compare(char *userString, char *directoryString)
         expanded_name[i] = toupper(expanded_name[i]);
     }
 
-    if (strncpy(expanded_name, IMG_Name, 11) == 0)
+    if (strncmp(expanded_name, IMG_Name, 11) == 0)
     {
         return 1;
     }
@@ -153,7 +153,26 @@ int bpb()
 
     return 0;
 }
+/*
 
+int ls()
+{
+  int i;
+  for (i = 0; i < NUM_ENTRIES; i++)
+  {
+
+    char filename[12];
+    strncpy(filename, dir[i].DIR_NAME, 11);
+    filename[11] = '\0';
+
+    if ((dir[i].DIR_Attr == ATTR_READ_ONLY || dir[i].DIR_Attr == ATTR_DIRECTORY || dir[i].DIR_Attr == ATTR_ARCHIVE) && filename[0] != 0xffffffe5)
+    {
+      printf("%s\n", filename);
+    }
+  }
+  return 0;
+}
+*/
 int ls()
 {
     int i;
@@ -213,10 +232,7 @@ int statFile(char *fileName)
     {
         if (compare(fileName, dir[i].DIR_NAME))
         {
-            char name[12];
-            strncpy(name, dir[i].DIR_NAME, 11);
-            name[11] = '\0';
-            printf("%s Attr: %d Size: %d Custer: %d\n", name, dir[i].DIR_Attr, dir[i].DIR_FileSize, dir[i].DIR_FirstClusterLow);
+            printf("%s Attr: %d Size: %d Custer: %d\n", fileName, dir[i].DIR_Attr, dir[i].DIR_FileSize, dir[i].DIR_FirstClusterLow);
             found = 1;
         }
     }
@@ -241,15 +257,15 @@ int getFile(char *orginalFilename, char *newFileName)
             perror("Error: ");
         }
     }
-    // else
-    // {
-    //   ofp = fopen(newFileName, "w");
-    //   if (ofp == NULL)
-    //   {
-    //     printf("Uable to open file: %s\n", newFileName);
-    //     perror("Error: ");
-    //   }
-    // }
+    else
+    {
+        ofp = fopen(newFileName, "w");
+        if (ofp == NULL)
+        {
+            printf("Uable to open file: %s\n", newFileName);
+            perror("Error: ");
+        }
+    }
 
     int i;
     int found = 0;
@@ -261,6 +277,7 @@ int getFile(char *orginalFilename, char *newFileName)
             int cluster = dir[i].DIR_FirstClusterLow;
 
             found = 1;
+
             int bytesRemainingToRead = dir[i].DIR_FileSize;
             int offset = 0;
             unsigned char buffer[512];
@@ -307,6 +324,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
     {
         if (compare(filename, dir[i].DIR_NAME))
         {
+
             int cluster = dir[i].DIR_FirstClusterLow;
 
             found = 1;
@@ -321,7 +339,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
 
             //Read the first block
             int offset = LBAToOffset(cluster);
-            int byteOffset = (requestedOffset * BPB_BytsPerSec);
+            int byteOffset = (requestedOffset % BPB_BytsPerSec);
             fseek(fp, offset + byteOffset, SEEK_SET);
 
             unsigned char buffer[BPB_BytsPerSec];
@@ -329,10 +347,12 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
             //Figure out how many bytes in the first block we need to read
             int firstBlockBytes = BPB_BytsPerSec - requestedOffset;
             fread(buffer, 1, firstBlockBytes, fp);
+            printf("%d", firstBlockBytes);
 
             for (i = 0; i < firstBlockBytes; i++)
             {
-                printf("%x", buffer[i]); //*
+
+                printf("%x", buffer[i]);
             }
 
             bytesRemainingToRead = bytesRemainingToRead - firstBlockBytes;
@@ -346,7 +366,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
 
                 for (i = 0; i < BPB_BytsPerSec; i++)
                 {
-                    printf("%x ", buffer[i]);
+                    printf("%s\n ", buffer[i]);
                 }
 
                 bytesRemainingToRead = bytesRemainingToRead - BPB_BytsPerSec;
@@ -360,7 +380,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
                 fseek(fp, offset, SEEK_SET);
                 fread(buffer, 1, BPB_BytsPerSec, fp);
 
-                for (i = 0; i < BPB_BytsPerSec; i++)
+                for (i = 0; i < bytesRemainingToRead; i++)
                 {
                     printf("%x", buffer[i]);
                 }
@@ -443,14 +463,13 @@ int main()
             fread(&BPB_SecPerClus, 1, 1, fp);
 
             fseek(fp, 14, SEEK_SET);
-            fread(&BPB_RsvdSecCnt, 2, 1, fp); //* get didn't work in 1,2
+            fread(&BPB_RsvdSecCnt, 2, 1, fp);
 
             fseek(fp, 16, SEEK_SET);
-            fread(&BPB_NumFATs, 1, 2, fp);
+            fread(&BPB_NumFATs, 2, 1, fp);
 
             fseek(fp, 36, SEEK_SET);
-            fread(&BPB_FATz32, 4, 1, fp); //* get didn't work in 4,1
-
+            fread(&BPB_FATz32, 4, 1, fp);
 
             int rootAddress = (BPB_RsvdSecCnt * BPB_BytsPerSec) + (BPB_NumFATs * BPB_FATz32 * BPB_BytsPerSec);
 
