@@ -20,6 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//Written by 
+//Ujjwal Bajagain 1001643752
+//Alisha Kunwar 1001668106 
+
 #define _GNU_SOURCE
 
 #include <stdio.h>
