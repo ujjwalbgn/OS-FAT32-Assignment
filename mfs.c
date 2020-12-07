@@ -315,7 +315,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
     int found = 0;
     int bytesRemainingToRead = requestedBytes;
 
-    if (requestedBytes < 0) //*
+    if (requestedOffset < 0) //*
     {
         printf("Error: Offset can not be less than zero\n");
     }
@@ -347,7 +347,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
             //Figure out how many bytes in the first block we need to read
             int firstBlockBytes = BPB_BytsPerSec - requestedOffset;
             fread(buffer, 1, firstBlockBytes, fp);
-            printf("%d", firstBlockBytes);
+            // printf("%d", firstBlockBytes);
 
             for (i = 0; i < firstBlockBytes; i++)
             {
@@ -366,7 +366,7 @@ int readFile(char *filename, int requestedOffset, int requestedBytes)
 
                 for (i = 0; i < BPB_BytsPerSec; i++)
                 {
-                    printf("%s\n ", buffer[i]);
+                    printf("%x", buffer[i]);
                 }
 
                 bytesRemainingToRead = bytesRemainingToRead - BPB_BytsPerSec;
